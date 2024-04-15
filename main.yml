@@ -1,0 +1,7 @@
+---
+- name: Playbook to execute ping role
+  hosts: rhel-db-servers
+  vars_files:
+     - vars.yml
+  roles:
+     - jump_server_config

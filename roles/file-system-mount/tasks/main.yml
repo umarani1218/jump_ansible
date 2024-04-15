@@ -1,0 +1,75 @@
+---
+
+# tasks file for logical volume creation , directory creation, file system format and file mount 
+- block:
+    - name: Check if volume group exists
+      shell: "vgdisplay {{ volume_group }}"
+      register: vg_info
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Create volume group if not present
+      command: "vgcreate {{ volume_group }} {{ physical_volume }}"
+      when: vg_info is failed
+
+    - name: Check if physical volumes existing
+      shell: "pvs --noheadings | awk '{ print $1 }' | grep '{{ physical_volume}}'"
+      register: pv_check
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Create physical volumes
+      lvg:
+        vg: "{{ physical_volume }}"
+        pvs: "{{ volume_group }}1"
+      when: pv_check is failed
+
+    - name: Check if logical volumes exist
+      shell: "lvs --noheadings | awk '{ print $1 }'"
+      loop: "{{ logical_volumes }}"
+      register: lv_check
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Create logical volumes
+      lvol:
+        vg: "{{ physical_volume }}"
+        lv: "{{ item.lv }}"
+        size: "{{ item.size }}"
+      loop: "{{ logical_volumes }}"    
+      when: lv_check is failed
+
+   
+    - name: Format logical volumes
+      filesystem:
+        fstype: xfs
+        dev: "{{physical_volume}}/{{item.lv}}"
+      loop: "{{ logical_volumes }}"
+      when: lv_check is failed
+
+    - name: Check if directories exist
+      stat:
+        path: "{{ item.path }}"
+      register: existing_dirs
+      loop: "{{ directories }}"
+
+    - name: Create directories if not present
+      file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop: "{{ directories }}"
+      when: not (item.path in existing_dirs.results | map(attribute='item.path') | list)
+
+    - name: Mount the directories if not mounted
+      mount:
+        path: "{{ item }}"
+        src: "/dev/rootvg/{{ item.split('/')[-1] }}"
+        fstype: xfs
+        state: mounted
+      loop: "{{ mounted_directories }}"
+      when: lv_check is failed
+  become: yes
+ 

@@ -1,0 +1,21 @@
+---
+additional_disk_name: "/dev/sdc"
+partitions:
+  - { number: 1, name: "drdbpool1",  part_start: "1MiB", part_end: "10GiB" }
+  - { number: 2, name: "drdbpool2", part_start: "10GiB", part_end: "30GiB" }
+volume_group: "rootvg"
+physical_volume: "dev/sda2"
+
+logical_volumes:
+  - { lv: "optmqm", size: "5g" }
+  - { lv: "varmqm", size: "10g" }
+
+directories:
+  - { path: '/opt/mqm', owner: 'mqm', group: 'mqm', mode: '0755' }
+  - { path: '/var/mqm', owner: 'mqm', group: 'mqm', mode: '0755' }
+
+mounted_directories:
+  - '/opt/mqm'
+  - '/var/mqm'
+
+

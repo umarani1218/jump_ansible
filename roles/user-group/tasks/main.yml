@@ -1,0 +1,26 @@
+---
+# tasks file for users and groups creation
+
+- block:
+  - name: Create groups for haclient and mqm if does not exist
+    group:
+      name: "{{ item.name }}"
+      gid: "{{ item.gid }}"
+      state: present
+    loop: 
+      - { name: "haclient", gid: "189" }
+      - { name: "mqm", gid: "307" }
+      
+  - name: Create users for hacluster and mqm if does not exist
+    user:
+      name: "{{ item.name }}"
+      uid: "{{ item.uid }}"
+      group: "{{ item.gid }}"
+      groups: "{{ item.groups }}"
+      state: present
+    loop:
+      - { name: "hacluster", uid: "189", gid: "189", groups: ["haclient"] }
+      - { name: "mqm", uid: "307", gid: "307", groups: ["mqm", "haclient"] }
+  become: yes
+
+
